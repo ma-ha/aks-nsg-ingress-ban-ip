@@ -6,7 +6,7 @@ module.exports = {
   initHealthEndpoint
 }
 
-const healthPort = process.env.HEALTH_PORT
+const healthPort = 8080
 const healthPath = process.env.HEALTH_PATH
 
 // ----------------------------------------------------------------------------

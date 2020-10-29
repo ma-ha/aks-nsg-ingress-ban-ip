@@ -77,7 +77,7 @@ const onMessage = ( eventData ) => {
       
       // only access log with error codes:
       if ( logDta && logDta.code >= 400 ) { 
-        log.info( 'log-error', logDta )
+        log.info( 'access-error', logDta )
         status.errCnt++
 
         if ( errorIPs[ logDta.ip ] ) { // IP caused errors before

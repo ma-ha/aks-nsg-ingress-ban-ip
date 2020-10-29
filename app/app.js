@@ -6,13 +6,7 @@ const stats  = require( './health' )
 
 log.info( 'Starting '+pjson.name+' v'+pjson.version )
 
-// change this:
-const aadId   = process.env.AAD_ID 
-const spId    = process.env.SP_ID  
-const spKey   = process.env.SP_KEY 
-const subId   = process.env.SUB_ID 
-const rgName  = process.env.RG 
-const nsgName = process.env.NSG
+let cfg = readConfig()
 
 let status = {
   msgCnt    : 0,
@@ -29,25 +23,48 @@ async function run() {
   try {
     log.info( 'Login for NSG operations...' )
     // get credentials for all following operations first:
-    await nsg.login( spId, spKey, aadId,  subId, rgName, nsgName  )
+    await nsg.login( cfg.spId, cfg.spKey, cfg.aadId, cfg.subId, cfg.rgName, cfg.nsgName )
 
     log.info( 'Start EventHub listener...' )
     ehLogs.startEhStreamReceiver( status, async ( maliciousIPaddr ) => {
       try {
         await nsg.addIpAddrArrToBlacklist( [ maliciousIPaddr ] )
         bannedIPs[ ip ] = ( new Date() ).toISOString()
+        log.info( 'Banned IP address: '+maliciousIPaddr )
       } catch ( exc ) { log.error( exc ) }
     })
 
     stats.initHealthEndpoint( status )
 
-  } catch ( exc ) {
-    log.error( 'Exception in MAIN run()', exc )
-  }
+  } catch ( exc ) { log.error( 'Exception in MAIN run()', exc ) }
 }
 
 
 // remove all ban rules older than 2 days
 function unbanIPs() {
   nsg.cleanupOldBlacklists()
+}
+
+// ----------------------------------------------------------------------------
+// helper
+
+function readConfig() {
+  let configs = { 
+    aadId   : 'AAD_ID', 
+    spId    : 'SP_ID',
+    spKey   : 'SP_KEY',
+    subId   : 'SUB_ID',
+    rgName  : 'RG',
+    nsgName : 'NSG'
+  }
+  for ( let aCfg in configs ) {
+    let cfgVar = configs[ aCfg ]
+    if ( process.env[ cfgVar ] ) {
+      configs[ aCfg ] = process.env[ cfgVar ] 
+    } else {
+      console.log( 'ERROR: Environment variable '+cfgVar+' not set.' )
+      process.exit( 0 )
+    }
+  }
+  return configs
 }

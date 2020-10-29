@@ -1,1 +1,94 @@
-TODO
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: aks-nsg-ingress-ban-ip
+spec:
+  selector:
+    matchLabels:
+      app: aks-nsg-ingress-ban-ip
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: aks-nsg-ingress-ban-ip
+    spec:
+      containers:
+      - name: aks-nsg-ingress-ban-ip
+        image: aks-nsg-ingress-ban-ip:0.2.0
+        env:
+        - name: AAD_ID
+          valueFrom:
+            secretKeyRef:
+              name: aks-nsg-ingress-ban-ip-secrets
+              key: AAD_ID
+        - name: SP_ID
+          valueFrom:
+            secretKeyRef:
+              name: aks-nsg-ingress-ban-ip-secrets
+              key: SP_ID
+        - name: SP_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aks-nsg-ingress-ban-ip-secrets
+              key: SP_KEY
+        - name: NSG
+          valueFrom:
+            secretKeyRef:
+              name: aks-nsg-ingress-ban-ip-secrets
+              key: NSG
+        - name: RG
+          valueFrom:
+            secretKeyRef:
+              name: aks-nsg-ingress-ban-ip-secrets
+              key: RG
+        - name: SUB_ID
+          valueFrom:
+            secretKeyRef:
+              name: aks-nsg-ingress-ban-ip-secrets
+              key: apiKey
+        - name: HEALTH_PATH
+          value: /aks-nsg-ingress-ban-ip/healthz
+        ports:
+        - containerPort: 8080
+        securityContext:
+          capabilities: 
+            add:
+            - NET_BIND_SERVICE
+            drop:
+            - ALL
+          procMount: Default
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aks-nsg-ingress-ban-ip
+  labels:
+    app: aks-nsg-ingress-ban-ip
+spec:
+  type: ClusterIP
+  selector:
+    app: aks-nsg-ingress-ban-ip
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: minion-ingress-aks-nsg-ingress-ban-ip
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.org/mergeable-ingress-type: "minion"
+spec:
+  rules:
+  - host: YOUR_DOMAIN
+    http:
+      paths:
+      - path: /aks-nsg-ingress-ban-ip
+        backend:
+          serviceName: aks-nsg-ingress-ban-ip
+          servicePort: 80
