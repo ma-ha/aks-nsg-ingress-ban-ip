@@ -15,7 +15,7 @@ IMPORTANT: Project status is still EXPERIMENTAL!
 
 The Container/Pod will listen for NginX Ingress Controller access logs (or any similar format logs). Attackers try lot of things in a short time (scripted) to find any backdoors, misconfigurations or security holes.
 
-Attackers IP adresses are banned 
+Attackers IP addresses are banned 
 1. if they do more HTTP errors (status code > 399) in a short time (default ERROR_THRESHOLD setting is 50)
 2. if they try to access URL paths containing NOGO_REQUESTS
    - default NOGO_REQUESTS patterns are "phpmyadmin,etc/passwd,wp-file-manager,phpunit" (feel free to extend them)
@@ -105,9 +105,9 @@ You need the key in the container configuration...
 
 To run the container you need to provide these configuration items:
 1. `AAD_ID` = the ID of your Azure Active Directory (where we need to login)
-2. `SP_ID` = a Service Pricipal ID, so a technical account you need to
+2. `SP_ID` = a Service Principal ID, so a technical account you need to
     prepare in AAD, see 
-    (docu how to create a SP)[https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal]
+    (how to create a SP)[https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal]
 3. `SP_KEY` = the secret key for the Service Principal
 4. `NSG` = name of the Network Security Group (aka Firewall) which need 
    to be configured. For an AKS this lives in the (Node Resource Group)
@@ -115,7 +115,7 @@ To run the container you need to provide these configuration items:
 5. `NSG_RG` = Resource group where the Network Security Group is in
 6. `NSG_SUB_ID` = Subscription where the Resource Group lives
 7. the `EH*` values are set using the environment variables from 
-   the prior setup setp
+   the prior setup part
 Now log on to your AKS cluster and create a Kubernetes secret for the six configs above:
 
 ```sh
