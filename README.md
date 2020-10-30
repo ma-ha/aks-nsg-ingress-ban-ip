@@ -5,6 +5,9 @@ Current limitation: Only NGINX Ingress controller log format is parsed (but feel
 
 NSG aka Network Security Group aka Firewall ;-)
 
+This is a ready-to-use implementation using the 
+(azure-nsg-ban-ips NPM package)[https://www.npmjs.com/package/azure-nsg-ban-ips].
+
 - The container subscribes to EventHub to read out the NGINX Ingress logs
 - Malicious IPs are identified by lot of errors, caused by attacks they try
 - These IPs are banned for some days in the firewall of the Kubernetes (aka NSG)
