@@ -10,6 +10,21 @@ NSG aka Network Security Group aka Firewall ;-)
 - These IPs are banned for some days in the firewall of the Kubernetes (aka NSG)
 
 IMPORTANT: Project status is still EXPERIMENTAL!
+ 
+# Who will be baned?
+
+The Container/Pod will listen for NginX Ingress Controller access logs (or any similar format logs). Attackers try lot of things in a short time (scripted) to find any backdoors, misconfigurations or security holes.
+
+Attackers IP adresses are banned 
+1. if they do more HTTP errors (status code > 399) in a short time (default ERROR_THRESHOLD setting is 50)
+2. if they try to access URL paths containing NOGO_REQUESTS
+   - default NOGO_REQUESTS patterns are "phpmyadmin,etc/passwd,wp-file-manager,phpunit" (feel free to extend them)
+   - default NOGOS_THRESHOLD is 3 (# requests before banned) 
+
+Blocking rules are created near realtime, if these rules are violated.
+
+"Short time" means: Every minute the violation counter will be decreased by one. 
+(The attack scripts to hundreds of attacks in a vew seconds.)
 
 # Set Up
 
@@ -67,12 +82,12 @@ LOG_EH_ID=$(az eventhubs eventhub show --name $LOGS_EVENT_HUB --namespace-name "
 
 az eventhubs eventhub authorization-rule create \
   --eventhub-name $LOGS_EVENT_HUB \
-  --name "eos-dev-export-containerlogs" \
+  --name "aks-nsg-ingress-ban-ip" \
   --namespace-name "$EVENT_HUB_NAMESPACE" \
   --resource-group "$EH_RESOURCE_GRP" \
   --rights Listen
 
-export EH_KEY=$(az eventhubs eventhub authorization-rule keys list --resource-group "$EH_RESOURCE_GRP" --namespace-name "$EVENT_HUB_NAMESPACE" --eventhub-name  "$LOGS_EVENT_HUB" --name "eos-dev-export-containerlogs"  --query primaryKey -o tsv)
+export EH_KEY=$(az eventhubs eventhub authorization-rule keys list --resource-group "$EH_RESOURCE_GRP" --namespace-name "$EVENT_HUB_NAMESPACE" --eventhub-name  "$LOGS_EVENT_HUB" --name "aks-nsg-ingress-ban-ip" --query primaryKey -o tsv)
 
 # configure log analytics to stream container logs to Event Hub
 az monitor log-analytics workspace data-export create \
@@ -90,27 +105,38 @@ You need the key in the container configuration...
 
 To run the container you need to provide these configuration items:
 1. `AAD_ID` = the ID of your Azure Active Directory (where we need to login)
-2. `SP_ID` = a Service Pricipal ID, so a technical account you need to prepare in AAD, see (docu how to create a SP)[https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal]
+2. `SP_ID` = a Service Pricipal ID, so a technical account you need to
+    prepare in AAD, see 
+    (docu how to create a SP)[https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal]
 3. `SP_KEY` = the secret key for the Service Principal
-4. `NSG` = name of the Network Security Group (aka Firewall) which need to be configured. For an AKS this lives in the (Node Resource Group)[https://docs.microsoft.com/en-us/azure/aks/faq#why-are-two-resource-groups-created-with-aks].
-5. `RG` = Resource group where the Network Security Group is in
-6. `SUB_ID` = Subscription where the Resource Group lives
-
+4. `NSG` = name of the Network Security Group (aka Firewall) which need 
+   to be configured. For an AKS this lives in the (Node Resource Group)
+   [https://docs.microsoft.com/en-us/azure/aks/faq#why-are-two-resource-groups-created-with-aks].
+5. `NSG_RG` = Resource group where the Network Security Group is in
+6. `NSG_SUB_ID` = Subscription where the Resource Group lives
+7. the `EH*` values are set using the environment variables from 
+   the prior setup setp
 Now log on to your AKS cluster and create a Kubernetes secret for the six configs above:
 
 ```sh
 kubectl create secret "aks-nsg-ingress-ban-ip-secrets" \
-  --from-literal=AAD_ID="your AAD_ID" \
-  --from-literal=SP_ID="your SP_ID" \
-  --from-literal=SP_KEY="your SP_KEY" \
-  --from-literal=NSG="your NSG" \
-  --from-literal=RG="your RG" \
-  --from-literal=SUB_ID="your SUB_ID" \
+  --from-literal=AAD_ID="YOUR_AAD_ID" \
+  --from-literal=SP_ID="YOUR_SP_ID" \
+  --from-literal=SP_KEY="YOUR_SP_KEY" \
+  --from-literal=NSG="YOUR_NSG_NAME" \
+  --from-literal=NSG_RG="YOUR_NSG_RESOURCE_GRP" \
+  --from-literal=NSG_SUB_ID="YOUR_NSG_SUBSCRIPTION_ID" \
+  --from-literal=EH_NS="$EVENT_HUB_NAMESPACE" \
+  --from-literal=EH_NAME="$LOGS_EVENT_HUB" \
+  --from-literal=EH_KEY_NAME="aks-nsg-ingress-ban-ip" \
+  --from-literal=EH_KEY="$EH_KEY" \
   -n "your-namespace"
 ```
 (replace all "your..." by the real values of course)
 
-Have a look at (run-kubernetes.yaml)[run-kubernetes.yaml]. This only needs one change: In the Minion Ingress config you must be adjust the domain. (if you don't have a (Mergeable Ingress with Master/Minion enabled controller)[https://github.com/nginxinc/kubernetes-ingress/tree/master/examples/mergeable-ingress-types], you can ingore or delete these section)
+Have a look at (run-kubernetes.yaml)[run-kubernetes.yaml]. 
+This only needs one change: In the Minion Ingress change this `host: YOUR_DOMAIN` config. 
+(If you don't have a (Mergeable Ingress with Master/Minion enabled controller)[https://github.com/nginxinc/kubernetes-ingress/tree/master/examples/mergeable-ingress-types], you can ingore or delete these section)
 Done that you are ready to run the pod. 
 
 To start the `ks-nsg-ingress-ban-ip` pod simply run

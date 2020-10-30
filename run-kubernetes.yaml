@@ -36,16 +36,42 @@ spec:
             secretKeyRef:
               name: aks-nsg-ingress-ban-ip-secrets
               key: NSG
-        - name: RG
+        - name: NSG_RG
           valueFrom:
             secretKeyRef:
               name: aks-nsg-ingress-ban-ip-secrets
-              key: RG
-        - name: SUB_ID
+              key: NSG_RG
+        - name: NSG_SUB_ID
           valueFrom:
             secretKeyRef:
               name: aks-nsg-ingress-ban-ip-secrets
               key: apiKey
+        - name: EH_NS
+          valueFrom:
+            secretKeyRef:
+              name: aks-nsg-ingress-ban-ip-secrets
+              key: EH_NS
+        - name: EH_NAME
+          valueFrom:
+            secretKeyRef:
+              name: aks-nsg-ingress-ban-ip-secrets
+              key: EH_NAME
+        - name: EH_KEY_NAME
+          valueFrom:
+            secretKeyRef:
+              name: aks-nsg-ingress-ban-ip-secrets
+              key: EH_KEY_NAME
+        - name: EH_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aks-nsg-ingress-ban-ip-secrets
+              key: EH_KEY
+        - name: ERROR_THRESHOLD
+          value: 50
+        - name: NOGO_REQUESTS
+          value: "phpmyadmin,etc/passwd,wp-file-manager,phpunit"
+        - name: NOGO_THRESHOLD
+          value: 3
         - name: HEALTH_PATH
           value: /aks-nsg-ingress-ban-ip/healthz
         ports:

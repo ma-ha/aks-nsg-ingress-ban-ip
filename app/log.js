@@ -1,5 +1,5 @@
 const pjson  = require( './package.json' )
-const bunyan   = require( 'bunyan' )
+const bunyan = require( 'bunyan' )
 
 let log = bunyan.createLogger({
   name  : pjson.name,

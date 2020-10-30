@@ -2,22 +2,27 @@ const { EventHubClient, EventPosition } = require( '@azure/event-hubs' )
 const log    = require( './log' ).logger
 
 module.exports = {
+  init,
   startEhStreamReceiver
 }
+
+let penaltyReduceJob = null
 
 // ----------------------------------------------------------------------------
 // Configs
 
 const logRegExp = /^(\S+) - \[(\S+)\] - - \[([\w:\/]+\s[+\-]\d{4})\] \"(\S+)\s?(\S+)?\s?(\S+)?\" (\d{3}|-) (\d+|-)\s?\"?([^\"]*)\"?\s?\"?([^\"]*)?" (\S+) (\S+) \[(\S+)\] (\S+) (\S+) (\S+)/g 
 
-const ehNameSpace  = process.env.EH_NAMESPACE 
-const ehKeyName    = process.env.EH_KEY_NAME
-const ehKey        = process.env.EH_KEY
-const ehName       = process.env.EH_NAME
-const errThreshold = process.env.EH_NAME 
+let cfg    = null
+let status = null
 
-const ehConnStr = 'Endpoint=sb://'+ehNameSpace+'.servicebus.windows.net/;'+
-                  'SharedAccessKeyName='+ehKeyName+';SharedAccessKey='+ehKey
+let max = {
+  'nogo' : 50,
+  'err' :  3
+}
+let nogoPatterns = []
+
+let ehConnStr = null
 
 // ----------------------------------------------------------------------------
 // Data fields
@@ -25,19 +30,56 @@ const ehConnStr = 'Endpoint=sb://'+ehNameSpace+'.servicebus.windows.net/;'+
 let errorIPs = {}
 
 let banIpFn = null
-let status  = null
+
+// ----------------------------------------------------------------------------
+function init( statusDta, config ) {
+  cfg    = config
+  status = statusDta
+
+  ehConnStr = 'Endpoint=sb://'+cfg.ehNameSpace+'.servicebus.windows.net/;'+
+    'SharedAccessKeyName='+cfg.ehKeyName+';SharedAccessKey='+cfg.ehKey
+
+  nogoPatterns = cfg.nogoPatterns.split(',')
+  max[ 'nogo' ] = cfg.nogoMax
+  max[ 'err' ] = cfg.errorsMax
+
+  log.info( 'Error Thresholds ',max )
+  log.info( 'NoGo Patterns',nogoPatterns )
+
+  // reduce penalty count every minute
+  penaltyReduceJob = setInterval( reducePenaltyCount, 60 * 1000 ) 
+  status.errorIPs = errorIPs
+}
+
+// ----------------------------------------------------------------------------
+function reducePenaltyCount() {
+  for ( let ip in errorIPs ) {
+    log.debug( 'reducePenaltyCount', ip, errorIPs[ip]['nogo'] , errorIPs[ip]['err'] )
+    if ( errorIPs[ip]['nogo'] > 0  ) {
+      errorIPs[ip]['nogo']--
+      log.debug( 'reduce nogo', errorIPs[ip], errorIPs[ip]['nogo'] )
+    }
+    if ( errorIPs[ip]['err'] > 0  ) {
+      errorIPs[ip]['err']--
+      log.debug( 'reduce err', errorIPs[ip], errorIPs[ip]['err'] )
+    }
+    if ( errorIPs[ip]['err'] == 0  && errorIPs[ip]['err'] == 0) {
+      log.debug( 'del from list', errorIPs[ ip ] )
+      delete errorIPs[ ip ]
+    }
+  }
+}
 
 // ----------------------------------------------------------------------------
 // Receive data after processing from Azure Event Hub
 
-async function startEhStreamReceiver( statusReport, banIpCallback ) {
-  status = statusReport
+async function startEhStreamReceiver( banIpCallback ) {
   try {
 
-    log.info( 'EH: Start: '+ehNameSpace+'/'+ehName )
+    log.info( 'EH: Start: '+cfg.ehNameSpace+'/'+cfg.ehName )
     const client = EventHubClient.createFromConnectionString( 
       ehConnStr, 
-      ehName
+      cfg.ehName
       // ,{ initialOffset: EventPosition.fromEnqueuedTime( Date.now() ) }
     )
 
@@ -72,34 +114,61 @@ const onMessage = ( eventData ) => {
   try { 
     // eventhub delivers messages as bulk:
     for ( let record of extractLogArr( eventData ) ) {
-      
-      let logDta = checkAndParseAccessLog( record )
+
+      let needBan = false      
+      let logDta  = checkAndParseAccessLog( record )
       
       // only access log with error codes:
-      if ( logDta && logDta.code >= 400 ) { 
-        log.info( 'access-error', logDta )
-        status.errCnt++
+      if ( isNogoPattern( logDta ) ) {
+        needBan = addViolationForIP( logDta, 'nogo' )
+      } else if ( isHttpError( logDta ) ) {
+        needBan = addViolationForIP( logDta, 'err' )
+      } 
 
-        if ( errorIPs[ logDta.ip ] ) { // IP caused errors before
-
-          errorIPs[ logDta.ip ]++
-          if ( errorIPs[ logDta.ip ] > errThreshold ) {
-
-            banIpCallback( logDta.ip )
-
-          }
-
-        } else { // add new IP to error list
-          errorIPs[ logDta.ip ] = 1
-        }
+      if ( needBan ) {
+        banIpFn( logDta.ip )
       }
     }
   } catch ( e ) {  log.error( 'EH receive', e ) }
 }
 
-
 // ----------------------------------------------------------------------------
 // helper
+
+function addViolationForIP( logDta, reason ) {
+  log.debug( reason, logDta )
+  status.errCnt++
+  if ( ! errorIPs[ logDta.ip ] ) {// IP caused no violations before
+    errorIPs[ logDta.ip ] = {
+        'nogo' : 0,
+        'err' : 0
+      }
+  }
+  errorIPs[ logDta.ip ][ reason ]++
+  log.debug( 'check max', errorIPs[ logDta.ip ][ reason ], max[ reason ] )
+  if ( errorIPs[ logDta.ip ][ reason ] >= max[ reason ] ) {
+    return true
+  }
+  return false
+}
+
+function isHttpError( logDta ) {
+  if ( logDta && logDta.code >= 400 ) { 
+    return true 
+  }
+  return false
+}
+
+function isNogoPattern( logDta ) {
+  if ( ! logDta ) { return }
+  for ( let nogo of nogoPatterns ) {
+    if ( logDta.op.indexOf( nogo ) != -1 ) {
+      log.debug( 'NOGO!!', logDta.op, nogo )
+      return true 
+    } 
+  }
+  return false
+}
 
 function extractLogArr( eventData ) {
   if ( eventData.body && eventData.body.records ) {

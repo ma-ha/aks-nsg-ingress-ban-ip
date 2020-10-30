@@ -19,24 +19,30 @@ run()
 // run clean up of NSGs every hour
 setInterval( unbanIPs, 60 * 60 * 1000 ) 
 
+// ----------------------------------------------------------------------------
+
 async function run() {
   try {
     log.info( 'Login for NSG operations...' )
     // get credentials for all following operations first:
-    await nsg.login( cfg.spId, cfg.spKey, cfg.aadId, cfg.subId, cfg.rgName, cfg.nsgName )
+    await nsg.login( cfg.spId, cfg.spKey, cfg.aadId, cfg.nsgSubId, cfg.nsgRG, cfg.nsgName )
 
     log.info( 'Start EventHub listener...' )
-    ehLogs.startEhStreamReceiver( status, async ( maliciousIPaddr ) => {
+    ehLogs.init( status, cfg )
+    ehLogs.startEhStreamReceiver( async ( maliciousIPaddr ) => {
       try {
+        log.info( 'Ban IP address '+maliciousIPaddr+' ...' )
         await nsg.addIpAddrArrToBlacklist( [ maliciousIPaddr ] )
-        bannedIPs[ ip ] = ( new Date() ).toISOString()
-        log.info( 'Banned IP address: '+maliciousIPaddr )
+        status.bannedIPs[ maliciousIPaddr ] = ( new Date() ).toISOString()
       } catch ( exc ) { log.error( exc ) }
     })
 
-    stats.initHealthEndpoint( status )
+    stats.initHealthEndpoint( cfg.healthzPath, status )
 
-  } catch ( exc ) { log.error( 'Exception in MAIN run()', exc ) }
+  } catch ( exc ) { 
+    log.error( 'Exception in MAIN run()', exc ) 
+    process.exit( 0 )
+  }
 }
 
 
@@ -49,13 +55,22 @@ function unbanIPs() {
 // helper
 
 function readConfig() {
+  let mustDie = false
   let configs = { 
-    aadId   : 'AAD_ID', 
-    spId    : 'SP_ID',
-    spKey   : 'SP_KEY',
-    subId   : 'SUB_ID',
-    rgName  : 'RG',
-    nsgName : 'NSG'
+    aadId        : 'AAD_ID', 
+    spId         : 'SP_ID',
+    spKey        : 'SP_KEY',
+    nsgName      : 'NSG',
+    nsgRG        : 'NSG_RG',
+    nsgSubId     : 'NSG_SUB_ID',
+    ehNameSpace  : 'EH_NS',
+    ehName       : 'EH_NAME',
+    ehKeyName    : 'EH_KEY_NAME',
+    ehKey        : 'EH_KEY',
+    errorsMax    : 'ERROR_THRESHOLD',
+    nogoPatterns : 'NOGO_REQUESTS',
+    nogoMax      : 'NOGO_THRESHOLD',
+    healthzPath  : 'HEALTH_PATH'
   }
   for ( let aCfg in configs ) {
     let cfgVar = configs[ aCfg ]
@@ -63,8 +78,11 @@ function readConfig() {
       configs[ aCfg ] = process.env[ cfgVar ] 
     } else {
       console.log( 'ERROR: Environment variable '+cfgVar+' not set.' )
-      process.exit( 0 )
+      mustDie = true
     }
+  }
+  if ( mustDie ) { 
+    process.exit( 0 ) 
   }
   return configs
 }

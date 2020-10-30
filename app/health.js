@@ -7,7 +7,7 @@ module.exports = {
 }
 
 const healthPort = 8080
-const healthPath = process.env.HEALTH_PATH
+let   healthPath = null
 
 // ----------------------------------------------------------------------------
 let expressApp  = express()
@@ -16,8 +16,9 @@ let metrics = null
 let upSince = ( new Date() ).toISOString()
 
 
-function initHealthEndpoint( healtMetrics ) {
+function initHealthEndpoint( path, healtMetrics ) {
   metrics = healtMetrics
+  healthPath = path
   if ( healthPort && healthPath ) {
 
     expressApp.get( healthPath, (req, res) => {

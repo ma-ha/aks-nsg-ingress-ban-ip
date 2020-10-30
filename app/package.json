@@ -1,6 +1,6 @@
 {
   "name": "aks-nsg-ingress-ban-ip",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Subscribe logs on Azure Event Hub and ban IPs doing too many failed requests",
   "main": "app.js",
   "scripts": {
