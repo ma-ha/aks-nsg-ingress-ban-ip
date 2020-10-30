@@ -16,22 +16,25 @@ IMPORTANT: Project status is still EXPERIMENTAL!
  
 # Who will be baned?
 
-The Container/Pod will listen for NginX Ingress Controller access logs (or any similar format logs). Attackers try lot of things in a short time (scripted) to find any backdoors, misconfigurations or security holes.
+The Container/Pod will listen for NginX Ingress Controller access logs (or any similar format logs). Attackers try lot of things in a short time (scripted) to find backdoors, misconfigurations or security holes.
 
 Attackers IP addresses are banned 
-1. if they do more HTTP errors (status code > 399) in a short time (default ERROR_THRESHOLD setting is 50)
+1. if they do more HTTP errors in a short time*
+   - errors: status code > 399
+   - default ERROR_THRESHOLD setting is 50
 2. if they try to access URL paths containing NOGO_REQUESTS
-   - default NOGO_REQUESTS patterns are "phpmyadmin,etc/passwd,wp-file-manager,phpunit" (feel free to extend them)
+   - default NOGO_REQUESTS pattern list is:
+     "phpmyadmin,etc/passwd,wp-file-manager,phpunit" (feel free to extend them)
    - default NOGOS_THRESHOLD is 3 (# requests before banned) 
 
 Blocking rules are created near realtime, if these rules are violated.
 
-"Short time" means: Every minute the violation counter will be decreased by one. 
-(The attack scripts to hundreds of attacks in a vew seconds.)
+*) "Short time" means: Every minute the violation counter will be decreased by one. 
+(attacker scripts do hundreds of attacks in seconds.)
 
 # Set Up
 
-... it's easier than it may be on the first look ;-)
+... it's easier than it may look ;-)
 
 If you don't have a Linux with a Bash, I recommend to use the 
 Azure Cloud shell in your Browser: Click icon in Azure Portal top menu bar.
@@ -106,7 +109,7 @@ You need the key in the container configuration...
 
 ## Configure and Start "aks-nsg-ingress-ban-ip" Container in AKS
 
-To run the container you need to provide these configuration items:
+To run the container you need these configuration items:
 1. `AAD_ID` = the ID of your Azure Active Directory (where we need to login)
 2. `SP_ID` = a Service Principal ID, so a technical account you need to
     prepare in AAD, see 
@@ -119,7 +122,8 @@ To run the container you need to provide these configuration items:
 6. `NSG_SUB_ID` = Subscription where the Resource Group lives
 7. the `EH*` values are set using the environment variables from 
    the prior setup part
-Now log on to your AKS cluster and create a Kubernetes secret for the six configs above:
+
+Log on to your AKS cluster and create a Kubernetes secret for the six configs above:
 
 ```sh
 kubectl create secret "aks-nsg-ingress-ban-ip-secrets" \
@@ -135,7 +139,7 @@ kubectl create secret "aks-nsg-ingress-ban-ip-secrets" \
   --from-literal=EH_KEY="$EH_KEY" \
   -n "your-namespace"
 ```
-(replace all "your..." by the real values of course)
+(replace all "YOUR..." by the real values of course)
 
 Have a look at (run-kubernetes.yaml)[run-kubernetes.yaml]. 
 This only needs one change: In the Minion Ingress change this `host: YOUR_DOMAIN` config. 
@@ -144,19 +148,21 @@ Done that you are ready to run the pod.
 
 To start the `ks-nsg-ingress-ban-ip` pod simply run
 ```sh
-kubectl apply run-kubernetes.yaml -n "your-namespace"
+kubectl apply run-kubernetes-pod.yaml -n "your-namespace"
 ```
 
 Check the logs: It should print out something about starting, login ... and if you find:
-```
+```sh 
+kubectl logs aks-nsg-ingress-ban-ip -n "your-namespace"
+...
 ... EH: Ready ...
 ```
 Yej :-), everything went well and the pod is waiting for NGINX ingress logs now.
 
-If errors occur in the access logs (HTTP status code >= 400), they should be printed out as `access-error` with some details. 
+Not much logs are printed out in `LOG_LEVEL: info` after startup. 
+Only `"Bann IP address: ..."` will be logged. 
 
-If too many errors are caused by a single IP, then you will see a log 
-`Banned IP address: ...`
+To see all the activities, you can change the `LOG_LEVEL` to `debug` in the Pod config.
 
 # NSG Rule Details 
 

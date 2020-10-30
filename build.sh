@@ -1,5 +1,6 @@
 cd build
 cp -R ../app .
 VERSION=$(cat app/package.json | jq -r .version)
-docker build -t aks-nsg-ingress-ban-ip:$VERSION .
+docker build -t mahade70/aks-nsg-ingress-ban-ip:$VERSION .
+docker push mahade70/aks_acli_tools:$VERSION
 rm -rf app
