@@ -20,6 +20,8 @@ run()
 setInterval( unbanIPs, 60 * 60 * 1000 ) 
 
 // ----------------------------------------------------------------------------
+let banning = false 
+let banBacklog = []
 
 async function run() {
   try {
@@ -32,9 +34,32 @@ async function run() {
     ehLogs.startEhStreamReceiver( async ( maliciousIPaddr ) => {
       try {
         log.info( 'Ban IP address '+maliciousIPaddr+' ...' )
-        await nsg.addIpAddrArrToBlacklist( [ maliciousIPaddr ] )
+
+        banBacklog.push( maliciousIPaddr )
         status.bannedIPs[ maliciousIPaddr ] = ( new Date() ).toISOString()
-      } catch ( exc ) { log.error( exc ) }
+
+        // this should also handles DDoS attacks well
+        if ( ! banning ) { // avoid running multiple NSG ops at the same time
+          banning = true
+          log.debug( 'Banning mode ON' )
+          while ( banBacklog.length > 0 ) { 
+            log.debug( 'banBacklog', banBacklog )
+            let clonedBanList = JSON.parse( JSON.stringify( banBacklog ) ) 
+            banBacklog = [] 
+            try {
+              log.debug( 'calling addIpAddrArrToBlacklist...' )
+              let result = await nsg.addIpAddrArrToBlacklist( clonedBanList )
+              log.debug( 'Blacklist', result )
+            } catch ( e ) { log.error( e ) }
+          }
+          banning = false
+          log.debug( 'Banning mode OFF' )
+        }
+
+      } catch ( exc ) { 
+        log.error( exc ) 
+        banning = false
+      }
     })
 
     stats.initHealthEndpoint( cfg.healthzPath, status )

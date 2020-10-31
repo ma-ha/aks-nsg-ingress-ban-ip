@@ -54,17 +54,17 @@ function init( statusDta, config ) {
 // ----------------------------------------------------------------------------
 function reducePenaltyCount() {
   for ( let ip in errorIPs ) {
-    log.debug( 'reducePenaltyCount', ip, errorIPs[ip]['nogo'] , errorIPs[ip]['err'] )
+    //log.debug( 'reducePenaltyCount', ip, errorIPs[ip]['nogo'] , errorIPs[ip]['err'] )
     if ( errorIPs[ip]['nogo'] > 0  ) {
       errorIPs[ip]['nogo']--
-      log.debug( 'reduce nogo', errorIPs[ip], errorIPs[ip]['nogo'] )
+      log.debug( 'reduce nogo', ip, errorIPs[ip]['nogo'] )
     }
     if ( errorIPs[ip]['err'] > 0  ) {
       errorIPs[ip]['err']--
-      log.debug( 'reduce err', errorIPs[ip], errorIPs[ip]['err'] )
+      log.debug( 'reduce err', ip, errorIPs[ip]['err'] )
     }
     if ( errorIPs[ip]['err'] == 0  && errorIPs[ip]['err'] == 0) {
-      log.debug( 'del from list', errorIPs[ ip ] )
+      log.debug( 'del from list', ip  )
       delete errorIPs[ ip ]
     }
   }
@@ -80,7 +80,6 @@ async function startEhStreamReceiver( banIpCallback ) {
     const client = EventHubClient.createFromConnectionString( 
       ehConnStr, 
       cfg.ehName
-      // ,{ initialOffset: EventPosition.fromEnqueuedTime( Date.now() ) }
     )
 
     log.info( 'EH: Get partitions...' )
@@ -145,7 +144,7 @@ function addViolationForIP( logDta, reason ) {
       }
   }
   errorIPs[ logDta.ip ][ reason ]++
-  log.debug( 'check max', errorIPs[ logDta.ip ][ reason ], max[ reason ] )
+  log.debug( 'check max', logDta.ip, errorIPs[ logDta.ip ][ reason ], max[ reason ] )
   if ( errorIPs[ logDta.ip ][ reason ] >= max[ reason ] ) {
     return true
   }
