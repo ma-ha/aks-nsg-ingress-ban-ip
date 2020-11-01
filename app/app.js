@@ -22,6 +22,7 @@ setInterval( unbanIPs, 60 * 60 * 1000 )
 // ----------------------------------------------------------------------------
 let banning = false 
 let banBacklog = []
+let bannedIPs = []
 
 async function run() {
   try {
@@ -31,36 +32,7 @@ async function run() {
 
     log.info( 'Start EventHub listener...' )
     ehLogs.init( status, cfg )
-    ehLogs.startEhStreamReceiver( async ( maliciousIPaddr ) => {
-      try {
-        log.info( 'Ban IP address '+maliciousIPaddr+' ...' )
-
-        banBacklog.push( maliciousIPaddr )
-        status.bannedIPs[ maliciousIPaddr ] = ( new Date() ).toISOString()
-
-        // this should also handles DDoS attacks well
-        if ( ! banning ) { // avoid running multiple NSG ops at the same time
-          banning = true
-          log.debug( 'Banning mode ON' )
-          while ( banBacklog.length > 0 ) { 
-            log.debug( 'banBacklog', banBacklog )
-            let clonedBanList = JSON.parse( JSON.stringify( banBacklog ) ) 
-            banBacklog = [] 
-            try {
-              log.debug( 'calling addIpAddrArrToBlacklist...' )
-              let result = await nsg.addIpAddrArrToBlacklist( clonedBanList )
-              log.debug( 'Blacklist', result )
-            } catch ( e ) { log.error( e ) }
-          }
-          banning = false
-          log.debug( 'Banning mode OFF' )
-        }
-
-      } catch ( exc ) { 
-        log.error( exc ) 
-        banning = false
-      }
-    })
+    ehLogs.startEhStreamReceiver( banIPaddrCallback )
 
     stats.initHealthEndpoint( cfg.healthzPath, status )
 
@@ -70,7 +42,42 @@ async function run() {
   }
 }
 
+// ----------------------------------------------------------------------------
+// process banning in NSG
 
+async function banIPaddrCallback( maliciousIPaddr ) {
+  try {
+    if ( bannedIPs && bannedIPs.indexOf( maliciousIPaddr ) >=0 ) {
+      return
+    }
+    banBacklog.push( maliciousIPaddr )
+    status.bannedIPs[ maliciousIPaddr ] = ( new Date() ).toISOString()
+
+    // this should also handles DDoS attacks well
+    if ( ! banning ) { // avoid running multiple NSG ops at the same time
+      banning = true
+      log.debug( 'Banning mode ON' )
+      while ( banBacklog.length > 0 ) { 
+        log.debug( 'banBacklog', banBacklog )
+        let clonedBanList = JSON.parse( JSON.stringify( banBacklog ) ) 
+        banBacklog = [] 
+        try {
+          log.debug( 'calling addIpAddrArrToBlacklist...' )
+          bannedIPs = await nsg.addIpAddrArrToBlacklist( clonedBanList )
+          log.debug( 'Blacklist', bannedIPs )
+        } catch ( e ) { log.error( e ) }
+      }
+      banning = false
+      log.debug( 'Banning mode OFF' )
+    }
+
+  } catch ( exc ) { 
+    log.error( exc ) 
+    banning = false
+  }
+}
+
+// ----------------------------------------------------------------------------
 // remove all ban rules older than 2 days
 function unbanIPs() {
   nsg.cleanupOldBlacklists()
