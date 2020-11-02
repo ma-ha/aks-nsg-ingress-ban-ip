@@ -6,7 +6,7 @@ Current limitation: Only NGINX Ingress controller log format is parsed (but feel
 NSG aka Network Security Group aka Firewall ;-)
 
 This is a ready-to-use implementation using the 
-(azure-nsg-ban-ips NPM package)[https://www.npmjs.com/package/azure-nsg-ban-ips].
+[azure-nsg-ban-ips NPM package](https://www.npmjs.com/package/azure-nsg-ban-ips).
 
 - The container subscribes to EventHub to read out the NGINX Ingress logs
 - Malicious IPs are identified by lot of errors, caused by attacks they try
@@ -113,11 +113,10 @@ To run the container you need these configuration items:
 1. `AAD_ID` = the ID of your Azure Active Directory (where we need to login)
 2. `SP_ID` = a Service Principal ID, so a technical account you need to
     prepare in AAD, see 
-    (how to create a SP)[https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal]
+    [how to create a SP](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal)
 3. `SP_KEY` = the secret key for the Service Principal
 4. `NSG` = name of the Network Security Group (aka Firewall) which need 
-   to be configured. For an AKS this lives in the (Node Resource Group)
-   [https://docs.microsoft.com/en-us/azure/aks/faq#why-are-two-resource-groups-created-with-aks].
+   to be configured. For an AKS this lives in the [Node Resource Group](https://docs.microsoft.com/en-us/azure/aks/faq#why-are-two-resource-groups-created-with-aks).
 5. `NSG_RG` = Resource group where the Network Security Group is in
 6. `NSG_SUB_ID` = Subscription where the Resource Group lives
 7. the `EH*` values are set using the environment variables from 
@@ -141,9 +140,9 @@ kubectl create secret "aks-nsg-ingress-ban-ip-secrets" \
 ```
 (replace all "YOUR..." by the real values of course)
 
-Have a look at (run-kubernetes.yaml)[run-kubernetes.yaml]. 
+Have a look at [run-kubernetes-pod.yaml](run-kubernetes-pod.yaml). 
 This only needs one change: In the Minion Ingress change this `host: YOUR_DOMAIN` config. 
-(If you don't have a (Mergeable Ingress with Master/Minion enabled controller)[https://github.com/nginxinc/kubernetes-ingress/tree/master/examples/mergeable-ingress-types], you can ingore or delete these section)
+(If you don't have a [Mergeable Ingress with Master/Minion enabled controller](https://github.com/nginxinc/kubernetes-ingress/tree/master/examples/mergeable-ingress-types), you can ignore or delete these section)
 Done that you are ready to run the pod. 
 
 To start the `ks-nsg-ingress-ban-ip` pod simply run

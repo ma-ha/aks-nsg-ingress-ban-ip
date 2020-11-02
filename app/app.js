@@ -16,7 +16,7 @@ let status = {
 
 run()
 
-// run clean up of NSGs every hour
+// run NSG clean up every hour
 setInterval( unbanIPs, 60 * 60 * 1000 ) 
 
 // ----------------------------------------------------------------------------
@@ -29,6 +29,9 @@ async function run() {
     log.info( 'Login for NSG operations...' )
     // get credentials for all following operations first:
     await nsg.login( cfg.spId, cfg.spKey, cfg.aadId, cfg.nsgSubId, cfg.nsgRG, cfg.nsgName )
+    
+    log.info( 'Clean up NSGs first...' )
+    nsg.cleanupOldBlacklists()
 
     log.info( 'Start EventHub listener...' )
     ehLogs.init( status, cfg )

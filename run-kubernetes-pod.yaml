@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: aks-nsg-ingress-ban-ip
-        image: ma-ha/aks-nsg-ingress-ban-ip:0.4.1
+        image: ma-ha/aks-nsg-ingress-ban-ip:0.4.2
         env:
         - name: AAD_ID
           valueFrom:
