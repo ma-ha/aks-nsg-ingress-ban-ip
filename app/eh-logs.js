@@ -11,8 +11,6 @@ let penaltyReduceJob = null
 // ----------------------------------------------------------------------------
 // Configs
 
-const logRegExp = /^(\S+) - \[(\S+)\] - - \[([\w:\/]+\s[+\-]\d{4})\] \"(\S+)\s?(\S+)?\s?(\S+)?\" (\d{3}|-) (\d+|-)\s?\"?([^\"]*)\"?\s?\"?([^\"]*)?" (\S+) (\S+) \[(\S+)\] (\S+) (\S+) (\S+)/g 
-
 let cfg    = null
 let status = null
 
@@ -180,16 +178,22 @@ function extractLogArr( eventData ) {
 
 function checkAndParseAccessLog( record ) {
   if ( record.LogEntry && record.LogEntry.indexOf('] - - [') > 0 ) {
-    let arr = logRegExp.exec( record.LogEntry )
-    if ( arr && arr.length > 1 ) {
-      let code = parseInt( arr[7], 10 )
+    
+    log.trace( record.LogEntry )
+    let logSplit = record.LogEntry.split(' ')
+    // console.table( logSplit )
+    log.trace( 'logSplit', logSplit )
+
+    if ( logSplit && logSplit.length > 13 ) {
+      let code = parseInt( logSplit[10], 10 )
       if ( isNaN( code ) ) { code = -1  }
       let result = {
-        ip   : arr[1],
-        op   : arr[4]+' '+arr[5],
-        agent: arr[10],
+        ip   : logSplit[0],
+        op   : logSplit[7]+' '+logSplit[8],
+        agent: logSplit[13],
         code : code
       }
+      log.debug( 'result', result )
       status.msgCnt++
       return result
     } 
