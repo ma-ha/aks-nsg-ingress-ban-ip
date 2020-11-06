@@ -109,7 +109,10 @@ You need the key in the container configuration...
 
 ## Configure and Start "aks-nsg-ingress-ban-ip" Container in AKS
 
-To run the container you need these configuration items:
+You don't need to clone this repo and build the container yourself, 
+just copy and apply the [run-kubernetes-pod.yaml](run-kubernetes-pod.yaml).
+
+Before you run the pod, you need these configuration items:
 1. `AAD_ID` = the ID of your Azure Active Directory (where we need to login)
 2. `SP_ID` = a Service Principal ID, so a technical account you need to
     prepare in AAD, see 
