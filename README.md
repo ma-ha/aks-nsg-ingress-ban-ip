@@ -162,12 +162,14 @@ kubectl logs aks-nsg-ingress-ban-ip -n "your-namespace"
 Yej :-), everything went well and the pod is waiting for NGINX ingress logs now.
 
 Not much logs are printed out in `LOG_LEVEL: info` after startup. 
-Only `"Bann IP address: ..."` will be logged. 
+Only `"Ban IP address ..."` will be logged. 
 
 Some other insights and metrics are available on the health web endpoint:
 http://localhst:8080/aks-nsg-ingress-ban-ip/healthz
 
 To see all the activities, you can change the `LOG_LEVEL` to `debug` in the Pod config.
+
+IMPORTANT: The pod YAML uses "latest" version of the pod, you may want to change this ;-)
 
 # NSG Rule Details 
 

@@ -125,6 +125,7 @@ const onMessage = ( eventData ) => {
       } 
 
       if ( needBan ) {
+        log.info( 'Ban IP address: ' + logDta.ip )
         banIpFn( logDta.ip )
       }
     }
