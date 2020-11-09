@@ -27,6 +27,8 @@ let bannedIPs = []
 async function run() {
   try {
     log.info( 'Login for NSG operations...' )
+    log.info( 'Sub: '+cfg.nsgSubId +' RG:'+cfg.nsgRG +' NSG:'+cfg.nsgName )
+
     // get credentials for all following operations first:
     await nsg.login( cfg.spId, cfg.spKey, cfg.aadId, cfg.nsgSubId, cfg.nsgRG, cfg.nsgName )
     

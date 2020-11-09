@@ -179,7 +179,7 @@ function extractLogArr( eventData ) {
 function checkAndParseAccessLog( record ) {
   if ( record.LogEntry && record.LogEntry.indexOf('] - - [') > 0 ) {
     
-    log.trace( record.LogEntry )
+    log.debug( record.LogEntry )
     let logSplit = record.LogEntry.split(' ')
     // console.table( logSplit )
     log.trace( 'logSplit', logSplit )
