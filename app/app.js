@@ -39,7 +39,7 @@ async function run() {
     ehLogs.init( status, cfg )
     ehLogs.startEhStreamReceiver( banIPaddrCallback )
 
-    stats.initHealthEndpoint( cfg.healthzPath, status )
+    stats.initHealthEndpoint( cfg.healthzPath, status, cfg.healthToken )
 
   } catch ( exc ) { 
     log.error( 'Exception in MAIN run()', exc ) 
@@ -117,6 +117,9 @@ function readConfig() {
       console.log( 'ERROR: Environment variable '+cfgVar+' not set.' )
       mustDie = true
     }
+  }
+  if ( process.env[ 'HEALTH_TOKEN' ] ) {
+    configs.healthToken = process.env[ 'HEALTH_TOKEN' ] 
   }
   if ( mustDie ) { 
     process.exit( 0 ) 

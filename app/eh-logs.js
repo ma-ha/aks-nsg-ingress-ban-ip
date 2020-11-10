@@ -33,6 +33,7 @@ let banIpFn = null
 function init( statusDta, config ) {
   cfg    = config
   status = statusDta
+  status.lastLog = []
 
   ehConnStr = 'Endpoint=sb://'+cfg.ehNameSpace+'.servicebus.windows.net/;'+
     'SharedAccessKeyName='+cfg.ehKeyName+';SharedAccessKey='+cfg.ehKey
@@ -133,6 +134,15 @@ const onMessage = ( eventData ) => {
 // ----------------------------------------------------------------------------
 // helper
 
+function logLastEvents( record ) {
+  if ( record.LogEntry ) {
+    status.lastLog.push( record.LogEntry )
+    if ( status.lastLog.length > 10 ) {
+      status.lastLog.shift()
+    }
+  }
+}
+
 function addViolationForIP( logDta, reason ) {
   log.debug( reason, logDta )
   status.errCnt++
@@ -178,7 +188,8 @@ function extractLogArr( eventData ) {
 
 function checkAndParseAccessLog( record ) {
   if ( record.LogEntry && record.LogEntry.indexOf('] - - [') > 0 ) {
-    
+    logLastEvents( record ) 
+
     log.debug( record.LogEntry )
     let logSplit = record.LogEntry.split(' ')
     // console.table( logSplit )

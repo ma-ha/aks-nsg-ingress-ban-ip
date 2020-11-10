@@ -8,6 +8,7 @@ module.exports = {
 
 const healthPort = 8080
 let   healthPath = null
+let   token      = null
 
 // ----------------------------------------------------------------------------
 let expressApp  = express()
@@ -16,19 +17,27 @@ let metrics = null
 let upSince = ( new Date() ).toISOString()
 
 
-function initHealthEndpoint( path, healtMetrics ) {
+function initHealthEndpoint( path, healtMetrics, authToken ) {
   metrics = healtMetrics
   healthPath = path
+  token      = authToken
+
   if ( healthPort && healthPath ) {
 
     expressApp.get( healthPath, (req, res) => {
-      // console.log('GET /signalr-mon/health')
-      res.send({
+      log.info('GET /signalr-mon/health', req.query )
+      let resJSON = {
         name      : pjson.name,
         version   : pjson.version,
         upSince   : upSince,
         metrics   : metrics
-      })
+      }
+      if ( token ) {
+        if ( req.query && req.query.token != token ) {
+          resJSON = {}
+        }
+      }
+      res.send( resJSON )
     })
   
     expressApp.listen( healthPort )
