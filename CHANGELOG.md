@@ -1,3 +1,7 @@
+# 0.5.4
+- log parser improvement (for strange hex logs)
+- toggle trace logs on/off via HTTP call
+
 # 0.5.2 
 - fix bug in cleanup blacklists (sometimes too fast)
 

@@ -11,6 +11,7 @@ let cfg = readConfig()
 let status = {
   msgCnt    : 0,
   errCnt    : 0,
+  tracelogs : false,
   bannedIPs : {}
 }
 
@@ -50,13 +51,14 @@ async function run() {
 // ----------------------------------------------------------------------------
 // process banning in NSG
 
-async function banIPaddrCallback( maliciousIPaddr ) {
+async function banIPaddrCallback( logData ) {
   try {
+    let maliciousIPaddr = logData.ip
     if ( bannedIPs && bannedIPs.indexOf( maliciousIPaddr ) >=0 ) {
       return
     }
     banBacklog.push( maliciousIPaddr )
-    status.bannedIPs[ maliciousIPaddr ] = ( new Date() ).toISOString()
+    status.bannedIPs[ maliciousIPaddr ] = logData
 
     // this should also handles DDoS attacks well
     if ( ! banning ) { // avoid running multiple NSG ops at the same time

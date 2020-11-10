@@ -39,7 +39,18 @@ function initHealthEndpoint( path, healtMetrics, authToken ) {
       }
       res.send( resJSON )
     })
-  
+
+    expressApp.get( healthPath+'/tracelogs', (req, res) => {
+      log.info( 'GET '+healthPath+'/tracelogs' )
+      if ( token ) {
+        if ( req.query && req.query.token == token ) {
+          metrics.tracelogs = ! metrics.tracelogs
+          log.info( 'tracelogs=' +metrics.tracelogs )
+        }
+      }
+      res.send( { tracelogs: metrics.tracelogs } )
+    })
+
     expressApp.listen( healthPort )
     log.info( `Health app listening on port ${healthPort} and path "${healthPath}"` )
 

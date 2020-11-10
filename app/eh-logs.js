@@ -3,7 +3,8 @@ const log    = require( './log' ).logger
 
 module.exports = {
   init,
-  startEhStreamReceiver
+  startEhStreamReceiver,
+  checkAndParseAccessLog
 }
 
 let penaltyReduceJob = null
@@ -125,7 +126,8 @@ const onMessage = ( eventData ) => {
 
       if ( needBan ) {
         log.info( 'Ban IP address: ' + logDta.ip )
-        banIpFn( logDta.ip )
+        logDta.banTime = (new Date()).toISOString()
+        banIpFn( logDta )
       }
     }
   } catch ( e ) {  log.error( 'EH receive', e ) }
@@ -171,7 +173,7 @@ function isNogoPattern( logDta ) {
   if ( ! logDta ) { return }
   for ( let nogo of nogoPatterns ) {
     if ( logDta.op.indexOf( nogo ) != -1 ) {
-      log.debug( 'NOGO!!', logDta.op, nogo )
+      log.info( 'NOGO!!', logDta.op, nogo )
       return true 
     } 
   }
@@ -191,17 +193,24 @@ function checkAndParseAccessLog( record ) {
     logLastEvents( record ) 
 
     log.debug( record.LogEntry )
-    let logSplit = record.LogEntry.split(' ')
-    // console.table( logSplit )
+
+    // following works also for "funny hex attack logs":
+    let logSplitStr = record.LogEntry.split('"')
+    let call = logSplitStr[1]
+    logSplitStr[1] = 'call'
+    let logSplit = logSplitStr.join(' ').split(' ')
     log.trace( 'logSplit', logSplit )
+    
+    if ( status.tracelogs ) { 
+      log.info( logSplit[5]+' '+logSplit[6] +' '+ logSplit[10] +' '+ call )
+    }
 
     if ( logSplit && logSplit.length > 13 ) {
       let code = parseInt( logSplit[10], 10 )
       if ( isNaN( code ) ) { code = -1  }
       let result = {
         ip   : logSplit[0],
-        op   : logSplit[7]+' '+logSplit[8],
-        agent: logSplit[13],
+        op   : call,
         code : code
       }
       log.debug( 'result', result )

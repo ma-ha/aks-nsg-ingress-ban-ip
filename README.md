@@ -170,6 +170,10 @@ http://localhst:8080/aks-nsg-ingress-ban-ip/healthz?token=SOME_KEY_STRING
 
 The `token` protects providing detailed insights. 
 
+To toggle thesome access log printed out on console, there is a `healthz/tracelogs` endpoint:
+http://localhst:8080/aks-nsg-ingress-ban-ip/healthz/tracelogs?token=SOME_KEY_STRING
+
+
 To see all the activities, you can change the `LOG_LEVEL` to `debug` in the Pod config.
 
 IMPORTANT: The pod YAML uses "latest" version of the pod, you may want to change this ;-)
