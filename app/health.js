@@ -25,7 +25,7 @@ function initHealthEndpoint( path, healtMetrics, authToken ) {
   if ( healthPort && healthPath ) {
 
     expressApp.get( healthPath, (req, res) => {
-      log.info('GET /signalr-mon/health', req.query )
+      log.debug( 'GET /'+healthPath+'/health', req.query )
       let resJSON = {
         name      : pjson.name,
         version   : pjson.version,
