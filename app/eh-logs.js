@@ -139,7 +139,7 @@ const onMessage = ( eventData ) => {
 function logLastEvents( record ) {
   if ( record.LogEntry ) {
     status.lastLog.push( record.LogEntry )
-    if ( status.lastLog.length > 10 ) {
+    if ( status.lastLog.length > 20 ) {
       status.lastLog.shift()
     }
   }
