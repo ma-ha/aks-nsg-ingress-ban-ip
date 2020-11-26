@@ -34,7 +34,6 @@ let banIpFn = null
 function init( statusDta, config ) {
   cfg    = config
   status = statusDta
-  status.lastLog = []
 
   ehConnStr = 'Endpoint=sb://'+cfg.ehNameSpace+'.servicebus.windows.net/;'+
     'SharedAccessKeyName='+cfg.ehKeyName+';SharedAccessKey='+cfg.ehKey
@@ -48,7 +47,7 @@ function init( statusDta, config ) {
 
   // reduce penalty count every minute
   penaltyReduceJob = setInterval( reducePenaltyCount, 60 * 1000 ) 
-  status.errorIPs = errorIPs
+  errorIPs = status.errorIPs
 }
 
 // ----------------------------------------------------------------------------
@@ -217,6 +216,9 @@ function checkAndParseAccessLog( record ) {
       status.msgCnt++
       return result
     } 
+  } else if ( record.LogEntry && record.LogEntry.indexOf('- - [') > 0 ) { // funny other log format
+    log.debug( record.LogEntry )
+    // TODO
   }
   return null
 }

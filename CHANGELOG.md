@@ -1,3 +1,7 @@
+# 0.5.6
+- improve health response
+- default token
+
 # 0.5.5
 - fix clean up
 

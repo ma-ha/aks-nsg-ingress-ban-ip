@@ -42,11 +42,15 @@ function initHealthEndpoint( path, healtMetrics, authToken ) {
 
     expressApp.get( healthPath+'/tracelogs', (req, res) => {
       log.info( 'GET '+healthPath+'/tracelogs' )
-      if ( token ) {
-        if ( req.query && req.query.token == token ) {
+      if ( req.query && req.query.token && token ) {
+        if ( req.query.token == token ) {
           metrics.tracelogs = ! metrics.tracelogs
           log.info( 'tracelogs=' +metrics.tracelogs )
         }
+      } else if ( req.query.token == 'test' ) {
+          metrics.tracelogs = ! metrics.tracelogs
+          log.info( 'Use default token!!' )
+          log.info( 'tracelogs=' +metrics.tracelogs )
       }
       res.send( { tracelogs: metrics.tracelogs } )
     })

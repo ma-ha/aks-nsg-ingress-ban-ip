@@ -12,6 +12,8 @@ let status = {
   msgCnt    : 0,
   errCnt    : 0,
   tracelogs : false,
+  lastLog   : [],
+  errorIPs  : {},
   bannedIPs : {}
 }
 
