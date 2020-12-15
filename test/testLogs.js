@@ -5,7 +5,7 @@ describe( 'Log Pattern Parser', () => {
 
   before(() => {
     ehLog.init(
-      { msgCnt: 0, errCnt: 0, bannedIPs: {} }, 
+      { msgCnt: 0, errCnt: 0, bannedIPs: {}, lastLog:[], tracelogs: true }, 
       { nogoPatterns: '' }
     )
     process.env.LOG_LEVEL = 'TRACE'
@@ -27,5 +27,13 @@ describe( 'Log Pattern Parser', () => {
     assert.equal( logDta.code, 400 )
   })
 
+
+  it( 'parse new log format', () => {
+    let record = {
+      LogEntry: '41.19.81.90 - - [14/Dec/2020:08:50:03 +0000] "GET /news/show-info HTTP/1.1" 200 85 "-" "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0; AppInsights)" 590 0.004 [misc-80] [] 10.244.18.117:80 85 0.004 200 0aa4568b92448364341c2d4e476a1b3f'
+    }
+    let logDta  = ehLog.checkAndParseAccessLog( record )
+    assert.equal( logDta.code, 200 )
+  })
 
 })

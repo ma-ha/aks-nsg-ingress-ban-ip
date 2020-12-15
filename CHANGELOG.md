@@ -1,4 +1,8 @@
 # 0.5.6
+- fix log format detection
+- improved log parser
+
+# 0.5.6
 - improve health response
 - default token
 

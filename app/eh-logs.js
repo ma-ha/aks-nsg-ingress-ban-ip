@@ -188,37 +188,28 @@ function extractLogArr( eventData ) {
 }
 
 function checkAndParseAccessLog( record ) {
-  if ( record.LogEntry && record.LogEntry.indexOf('] - - [') > 0 ) {
+  if ( record.LogEntry && record.LogEntry.indexOf('- - [') > 0 ) { 
     logLastEvents( record ) 
 
-    log.debug( record.LogEntry )
-
-    // following works also for "funny hex attack logs":
     let logSplitStr = record.LogEntry.split('"')
-    let call = logSplitStr[1]
-    logSplitStr[1] = 'call'
-    let logSplit = logSplitStr.join(' ').split(' ')
-    log.trace( 'logSplit', logSplit )
-    
+
+    let callStr  = logSplitStr[1]
+    let callerIP = logSplitStr[0].split(' ')[0]
+    let codeStr  = logSplitStr[2].trim().split(' ')[0]
+
     if ( status.tracelogs ) { 
-      log.info( logSplit[5]+' '+logSplit[6] +' '+ logSplit[10] +' '+ call )
+      log.info( callerIP +' '+ callStr +' '+ codeStr )
     }
 
-    if ( logSplit && logSplit.length > 13 ) {
-      let code = parseInt( logSplit[10], 10 )
-      if ( isNaN( code ) ) { code = -1  }
-      let result = {
-        ip   : logSplit[0],
-        op   : call,
-        code : code
-      }
-      log.debug( 'result', result )
-      status.msgCnt++
-      return result
-    } 
-  } else if ( record.LogEntry && record.LogEntry.indexOf('- - [') > 0 ) { // funny other log format
-    log.debug( record.LogEntry )
-    // TODO
+    let code = parseInt( codeStr, 10 )
+    if ( isNaN( code ) ) { code = -1  }
+    let result = {
+      ip   : callerIP,
+      op   : callStr,
+      code : code
+    }
+    status.msgCnt++
+    return result
   }
   return null
 }
